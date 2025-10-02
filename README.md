@@ -1,11 +1,9 @@
 # Crypto Price Tracker
 
 A real-time cryptocurrency price monitoring application with user authentication, built with Java Swing and MySQL.
-
 ![Java](https://img.shields.io/badge/Java-17+-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-
 ## Features
 
 ### User Authentication
@@ -27,8 +25,6 @@ A real-time cryptocurrency price monitoring application with user authentication
 - Responsive table design with alternating row colors
 - Real-time status updates
 - Last update timestamp display
-
-## Screenshots
 
 ### Login Screen
 Clean and modern authentication interface with dark theme.
@@ -234,12 +230,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Java Swing for GUI framework
 - MySQL for database management
 
-## Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
-
-Project Link: [https://github.com/yourusername/crypto-price-tracker](https://github.com/yourusername/crypto-price-tracker)
-
----
 
 **Disclaimer**: This application is for educational purposes only. Cryptocurrency investments carry risk. Always do your own research before investing.
