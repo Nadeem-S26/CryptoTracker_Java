@@ -1,10 +1,11 @@
 # Crypto Price Tracker
 
 A real-time cryptocurrency price monitoring application with user authentication, built with Java Swing and MySQL.
+
 ![Java](https://img.shields.io/badge/Java-17+-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-## Features
+
 
 ### User Authentication
 - Secure user registration and login system
@@ -26,12 +27,6 @@ A real-time cryptocurrency price monitoring application with user authentication
 - Real-time status updates
 - Last update timestamp display
 
-### Login Screen
-Clean and modern authentication interface with dark theme.
-
-### Main Dashboard
-Real-time cryptocurrency prices with automatic updates.
-
 ## Technology Stack
 
 - **Language**: Java 17+
@@ -39,24 +34,7 @@ Real-time cryptocurrency prices with automatic updates.
 - **Database**: MySQL 8.0+
 - **API**: CoinGecko API (Free tier)
 - **JDBC Driver**: MySQL Connector/J
-
-## Prerequisites
-
-Before running the application, ensure you have:
-
-1. **Java Development Kit (JDK) 17 or higher**
-   ```bash
-   java -version
-   ```
-
-2. **MySQL Server 8.0 or higher**
-   ```bash
-   mysql --version
-   ```
-
-3. **MySQL Connector/J** (JDBC Driver)
-   - Download from [MySQL Official Site](https://dev.mysql.com/downloads/connector/j/)
-
+- 
 ## Installation
 
 ### 1. Clone the Repository
@@ -97,7 +75,7 @@ Place `mysql-connector-java.jar` in your project directory.
 
 ### Using IDE
 1. Open the project in your IDE
-2. Run `CryptoLoginSystem.java`
+2. Run `UserLogin.java`
 
 ### Using Command Line
 
@@ -114,20 +92,6 @@ java -cp .:mysql-connector-java.jar CryptoLoginSystem
 # Windows
 java -cp .;mysql-connector-java.jar CryptoLoginSystem
 ```
-
-## Usage
-
-### First Time Setup
-1. Launch the application
-2. Click "Create Account"
-3. Fill in registration details
-4. Login with your credentials
-
-### Tracking Cryptocurrencies
-1. Default cryptocurrencies (BTC, ETH, SOL, ADA, DOGE) load automatically
-2. Add custom crypto by entering symbol (e.g., "LINK", "MATIC") and clicking "Add Crypto"
-3. Prices auto-refresh every 30 seconds
-4. Click "Refresh All" for manual update
 
 ## Project Structure
 
@@ -209,27 +173,3 @@ API returned status code: 429
 - [ ] Multiple currency support (EUR, GBP, etc.)
 - [ ] Favorites/watchlist feature
 - [ ] Dark/Light theme toggle
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [CoinGecko API](https://www.coingecko.com/en/api) for cryptocurrency data
-- Java Swing for GUI framework
-- MySQL for database management
-
-
-
-**Disclaimer**: This application is for educational purposes only. Cryptocurrency investments carry risk. Always do your own research before investing.
