@@ -117,6 +117,15 @@ public class CryptoPriceTracker extends JFrame {
         headerPanel.add(rightPanel, BorderLayout.EAST);
         
         add(headerPanel, BorderLayout.NORTH);
+        // In createHeaderPanel() method, add this button:
+        JButton portfolioButton = createHeaderButton("My Portfolio");
+        portfolioButton.addActionListener(e -> openPortfolio());
+        userPanel.add(portfolioButton);
+
+    }
+    // Add this method:
+    private void openPortfolio() {
+        new PortfolioFrame().setVisible(true);
     }
     
     private JButton createHeaderButton(String text) {

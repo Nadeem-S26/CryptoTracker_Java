@@ -478,6 +478,7 @@ public class UserLogin {
     public static void main(String[] args) {
         // Initialize database
         DatabaseManager.initializeDatabase();
+        PortfolioDatabaseManager.initializePortfolioTable();
         
         // Launch login frame
         SwingUtilities.invokeLater(() -> {
