@@ -3,8 +3,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-
-// Database Manager Class
+// Database Manager for handling user authentication and registration
 class DatabaseManager {
     private static final String URL = "jdbc:mysql://localhost:3306/cryptodb";
     private static final String DB_USER = "root";
@@ -31,25 +30,53 @@ class DatabaseManager {
             System.err.println("Database initialization error: " + e.getMessage());
         }
     }
+    public static Integer authenticateUser(String username, String password) {
+    String query = "SELECT id FROM users WHERE username = ? AND password = ?";
     
-    public static boolean authenticateUser(String username, String password) {
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
+    try (Connection conn = getConnection();
+         PreparedStatement pstmt = conn.prepareStatement(query)) {
         
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
-            pstmt.setString(1, username);
-            pstmt.setString(2, password); // Note: In production, use hashed passwords
-            
-            ResultSet rs = pstmt.executeQuery();
-            return rs.next();
-            
+        pstmt.setString(1, username);
+        pstmt.setString(2, password);
+        
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            int userId = rs.getInt("id");
+            updateLastLogin(userId);
+            return userId;
+        }
+        
         } catch (SQLException e) {
             System.err.println("Authentication error: " + e.getMessage());
-            return false;
+        }
+        return null;
+    }
+
+    private static void updateLastLogin(int userId) {
+        String query = "UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?";
+        try (Connection conn = getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.err.println("Error updating last login: " + e.getMessage());
         }
     }
-    
+
+    public static String getUserEmail(int userId) {
+        String query = "SELECT email FROM users WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("email");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching email: " + e.getMessage());
+        }
+        return null;
+    }
     public static boolean registerUser(String username, String password, String email) {
         String query = "INSERT INTO users (username, password, email) VALUES (?, ?, ?)";
         
@@ -69,7 +96,6 @@ class DatabaseManager {
         }
     }
 }
-
 class LoginFrame extends JFrame {
     private JTextField usernameField;
     private JPasswordField passwordField;
@@ -230,20 +256,21 @@ class LoginFrame extends JFrame {
             return;
         }
         
-        if (DatabaseManager.authenticateUser(username, password)) {
-            messageLabel.setForeground(new Color(0, 200, 83));
-            messageLabel.setText("Login successful!");
-            
-            // Open crypto tracker
-            SwingUtilities.invokeLater(() -> {
-                new CryptoPriceTracker().setVisible(true);
-                dispose();
-            });
+        Integer userId = DatabaseManager.authenticateUser(username, password);
+        if (userId != null) {
+        UserSession.getInstance().login(username, userId);
+        messageLabel.setForeground(new Color(0, 200, 83));
+        messageLabel.setText("Login successful!");
+    
+        SwingUtilities.invokeLater(() -> {
+        new CryptoPriceTracker().setVisible(true);
+        dispose();
+        });
         } else {
-            messageLabel.setForeground(ERROR_COLOR);
-            messageLabel.setText("Invalid username or password");
-        }
+        messageLabel.setForeground(ERROR_COLOR);
+        messageLabel.setText("Invalid username or password");
     }
+}
     
     private void openRegistrationFrame() {
         new RegistrationFrame(this).setVisible(true);

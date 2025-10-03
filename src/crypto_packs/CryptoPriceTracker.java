@@ -3,8 +3,6 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.table.*;
-import java.util.*;
-import java.util.List;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -14,12 +12,14 @@ public class CryptoPriceTracker extends JFrame {
     private JTextField symbolField;
     private JButton addButton;
     private JButton refreshButton;
+    private JButton logoutButton;
+    private JButton profileButton;
     private JLabel statusLabel;
+    private JLabel userLabel;
     private JLabel lastUpdateLabel;
     private javax.swing.Timer refreshTimer;
-    private List<String> trackedSymbols;
+    private java.util.List<String> trackedSymbols;
     
-    // Color scheme
     private static final Color BACKGROUND_COLOR = new Color(18, 18, 18);
     private static final Color PANEL_COLOR = new Color(28, 28, 28);
     private static final Color ACCENT_COLOR = new Color(64, 224, 208);
@@ -29,29 +29,26 @@ public class CryptoPriceTracker extends JFrame {
     private static final Color DANGER_COLOR = new Color(234, 57, 67);
     
     public CryptoPriceTracker() {
-        trackedSymbols = new ArrayList<>();
+        trackedSymbols = new java.util.ArrayList<>();
         initializeGUI();
         setupTimer();
         addDefaultCryptos();
     }
     
     private void initializeGUI() {
-        setTitle("Crypto Price Tracker - Live Dashboard");
+        setTitle("Crypto Price Tracker - " + UserSession.getInstance().getCurrentUsername());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
         getContentPane().setBackground(BACKGROUND_COLOR);
+        
         createHeaderPanel();
         createTablePanel();
         createControlPanel();
         createStatusPanel();
-        setSize(900, 600);
+        
+        setSize(950, 650);
         setLocationRelativeTo(null);
         setMinimumSize(new Dimension(800, 500));
-        try {
-            UIManager.setLookAndFeel(UIManager.getLookAndFeel());
-        } catch (Exception e) {
-            // Use default
-        }
     }
     
     private void createHeaderPanel() {
@@ -62,37 +59,94 @@ public class CryptoPriceTracker extends JFrame {
             BorderFactory.createEmptyBorder(15, 20, 15, 20)
         ));
         
-        // Title
+        // Left side - Title
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setBackground(PANEL_COLOR);
+        
         JLabel titleLabel = new JLabel("Crypto Price Tracker");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(TEXT_COLOR);
         
-        // Subtitle
         JLabel subtitleLabel = new JLabel("Real-time cryptocurrency price monitoring");
         subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         subtitleLabel.setForeground(SECONDARY_TEXT);
         
-        JPanel titlePanel = new JPanel(new BorderLayout());
-        titlePanel.setBackground(PANEL_COLOR);
         titlePanel.add(titleLabel, BorderLayout.NORTH);
         titlePanel.add(subtitleLabel, BorderLayout.SOUTH);
         
-        // Last update info
+        // Right side - User info and buttons
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        userPanel.setBackground(PANEL_COLOR);
+        
+        // User info
+        UserSession session = UserSession.getInstance();
+        String loginTimeStr = session.getLoginTime().format(DateTimeFormatter.ofPattern("HH:mm"));
+        
+        userLabel = new JLabel("Logged in as: " + session.getCurrentUsername() + " (" + loginTimeStr + ")");
+        userLabel.setFont(new Font("Arial", Font.BOLD, 13));
+        userLabel.setForeground(ACCENT_COLOR);
+        
+        // Profile button
+        profileButton = createHeaderButton("View Profile");
+        profileButton.addActionListener(e -> showProfileDialog());
+        
+        // Logout button
+        logoutButton = createHeaderButton("Logout");
+        logoutButton.setBackground(DANGER_COLOR);
+        logoutButton.addActionListener(e -> performLogout());
+        
+        userPanel.add(userLabel);
+        userPanel.add(profileButton);
+        userPanel.add(logoutButton);
+        
+        // Last update label
         lastUpdateLabel = new JLabel("Last updated: Never");
         lastUpdateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         lastUpdateLabel.setForeground(SECONDARY_TEXT);
         
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setBackground(PANEL_COLOR);
+        bottomPanel.add(lastUpdateLabel);
+        
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.setBackground(PANEL_COLOR);
+        rightPanel.add(userPanel, BorderLayout.NORTH);
+        rightPanel.add(bottomPanel, BorderLayout.SOUTH);
+        
         headerPanel.add(titlePanel, BorderLayout.WEST);
-        headerPanel.add(lastUpdateLabel, BorderLayout.EAST);
+        headerPanel.add(rightPanel, BorderLayout.EAST);
         
         add(headerPanel, BorderLayout.NORTH);
+    }
+    
+    private JButton createHeaderButton(String text) {
+        JButton button = new JButton(text);
+        button.setBackground(PANEL_COLOR.brighter());
+        button.setForeground(TEXT_COLOR);
+        button.setFocusPainted(false);
+        button.setBorderPainted(true);
+        button.setBorder(BorderFactory.createLineBorder(ACCENT_COLOR, 1));
+        button.setFont(new Font("Arial", Font.BOLD, 11));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(100, 30));
+        
+        button.addMouseListener(new MouseAdapter() {
+            Color originalBg = button.getBackground();
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(ACCENT_COLOR.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBg);
+            }
+        });
+        
+        return button;
     }
     
     private void createTablePanel() {
         tableModel = new CryptoTableModel();
         cryptoTable = new JTable(tableModel);
         
-        // Custom table styling
         cryptoTable.setBackground(PANEL_COLOR);
         cryptoTable.setForeground(TEXT_COLOR);
         cryptoTable.setSelectionBackground(ACCENT_COLOR.darker());
@@ -103,18 +157,14 @@ public class CryptoPriceTracker extends JFrame {
         cryptoTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         cryptoTable.setShowVerticalLines(false);
         
-        // Header styling
         JTableHeader header = cryptoTable.getTableHeader();
         header.setBackground(PANEL_COLOR.brighter());
         header.setForeground(TEXT_COLOR);
         header.setFont(new Font("Arial", Font.BOLD, 13));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ACCENT_COLOR));
         
-        // Custom renderers
         cryptoTable.setDefaultRenderer(Object.class, new CustomTableCellRenderer());
-        cryptoTable.getColumnModel().getColumn(3).setCellRenderer(new PercentageRenderer());
         
-        // Column widths
         cryptoTable.getColumnModel().getColumn(0).setPreferredWidth(80);
         cryptoTable.getColumnModel().getColumn(1).setPreferredWidth(150);
         cryptoTable.getColumnModel().getColumn(2).setPreferredWidth(120);
@@ -140,22 +190,20 @@ public class CryptoPriceTracker extends JFrame {
             BorderFactory.createEmptyBorder(15, 20, 15, 20)
         ));
         
-        // Add symbol section
         JLabel addLabel = new JLabel("Add Symbol:");
         addLabel.setForeground(TEXT_COLOR);
         addLabel.setFont(new Font("Arial", Font.BOLD, 13));
         
         symbolField = new JTextField(12);
         styleTextField(symbolField);
-        symbolField.addActionListener(_e -> addCrypto());
+        symbolField.addActionListener(e -> addCrypto());
         
         addButton = createStyledButton("Add Crypto", ACCENT_COLOR);
-        addButton.addActionListener(_e -> addCrypto());
+        addButton.addActionListener(e -> addCrypto());
         
         refreshButton = createStyledButton("Refresh All", SUCCESS_COLOR);
-        refreshButton.addActionListener(_e -> refreshAllData());
+        refreshButton.addActionListener(e -> refreshAllData());
         
-        // Auto-refresh indicator
         JLabel autoRefreshLabel = new JLabel("Auto-refresh: 30s");
         autoRefreshLabel.setForeground(SECONDARY_TEXT);
         autoRefreshLabel.setFont(new Font("Arial", Font.ITALIC, 12));
@@ -181,17 +229,6 @@ public class CryptoPriceTracker extends JFrame {
         statusLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         
         statusPanel.add(statusLabel, BorderLayout.WEST);
-        
-        // Add a small separator above status
-        JSeparator separator = new JSeparator();
-        separator.setForeground(new Color(60, 60, 60));
-        
-        JPanel statusContainer = new JPanel(new BorderLayout());
-        statusContainer.setBackground(BACKGROUND_COLOR);
-        statusContainer.add(separator, BorderLayout.NORTH);
-        statusContainer.add(statusPanel, BorderLayout.CENTER);
-        
-        add(statusContainer, BorderLayout.SOUTH);
     }
     
     private void styleTextField(JTextField field) {
@@ -215,14 +252,10 @@ public class CryptoPriceTracker extends JFrame {
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         
-        // Hover effect
         button.addMouseListener(new MouseAdapter() {
-            @Override
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(bgColor.brighter());
             }
-            
-            @Override
             public void mouseExited(MouseEvent e) {
                 button.setBackground(bgColor);
             }
@@ -231,8 +264,88 @@ public class CryptoPriceTracker extends JFrame {
         return button;
     }
     
+    private void showProfileDialog() {
+        UserSession session = UserSession.getInstance();
+        String email = DatabaseManager.getUserEmail(session.getUserId());
+        
+        JDialog profileDialog = new JDialog(this, "User Profile", true);
+        profileDialog.setSize(400, 300);
+        profileDialog.setLocationRelativeTo(this);
+        profileDialog.setLayout(new BorderLayout());
+        
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(PANEL_COLOR);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        
+        JLabel titleLabel = new JLabel("Profile Information");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel.setForeground(ACCENT_COLOR);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 30)));
+        
+        addProfileField(contentPanel, "Username:", session.getCurrentUsername());
+        addProfileField(contentPanel, "User ID:", String.valueOf(session.getUserId()));
+        addProfileField(contentPanel, "Email:", email != null ? email : "Not provided");
+        addProfileField(contentPanel, "Login Time:", 
+            session.getLoginTime().format(DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm:ss")));
+        
+        JButton closeButton = createStyledButton("Close", ACCENT_COLOR);
+        closeButton.addActionListener(e -> profileDialog.dispose());
+        closeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 20)));
+        contentPanel.add(closeButton);
+        
+        profileDialog.add(contentPanel);
+        profileDialog.getContentPane().setBackground(BACKGROUND_COLOR);
+        profileDialog.setVisible(true);
+    }
+    
+    private void addProfileField(JPanel panel, String label, String value) {
+        JPanel fieldPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        fieldPanel.setBackground(PANEL_COLOR);
+        
+        JLabel labelComp = new JLabel(label);
+        labelComp.setFont(new Font("Arial", Font.BOLD, 13));
+        labelComp.setForeground(SECONDARY_TEXT);
+        labelComp.setPreferredSize(new Dimension(100, 20));
+        
+        JLabel valueComp = new JLabel(value);
+        valueComp.setFont(new Font("Arial", Font.PLAIN, 13));
+        valueComp.setForeground(TEXT_COLOR);
+        
+        fieldPanel.add(labelComp);
+        fieldPanel.add(valueComp);
+        
+        panel.add(fieldPanel);
+        panel.add(Box.createRigidArea(new Dimension(0, 10)));
+    }
+    
+    private void performLogout() {
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            refreshTimer.stop();
+            UserSession.getInstance().logout();
+            
+            SwingUtilities.invokeLater(() -> {
+                new LoginFrame().setVisible(true);
+                dispose();
+            });
+        }
+    }
+    
     private void setupTimer() {
-        refreshTimer = new javax.swing.Timer(30000, _e -> refreshAllData());
+        refreshTimer = new javax.swing.Timer(30000, e -> refreshAllData());
         refreshTimer.start();
     }
     
@@ -313,7 +426,6 @@ public class CryptoPriceTracker extends JFrame {
         lastUpdateLabel.setText("Last updated: " + timestamp);
     }
     
-    // Custom table cell renderer
     private class CustomTableCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
@@ -323,24 +435,6 @@ public class CryptoPriceTracker extends JFrame {
             if (!isSelected) {
                 c.setBackground(row % 2 == 0 ? PANEL_COLOR : PANEL_COLOR.darker());
                 c.setForeground(TEXT_COLOR);
-            }
-            
-            setHorizontalAlignment(column == 0 ? SwingConstants.CENTER : SwingConstants.LEFT);
-            if (column == 2) { // Price column
-                setHorizontalAlignment(SwingConstants.RIGHT);
-            }
-            
-            return c;
-        }
-    }
-    private class PercentageRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                boolean isSelected, boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            
-            if (!isSelected) {
-                c.setBackground(row % 2 == 0 ? PANEL_COLOR : PANEL_COLOR.darker());
             }
             
             if (column == 3 && value != null) {
@@ -353,11 +447,11 @@ public class CryptoPriceTracker extends JFrame {
                 setFont(getFont().deriveFont(Font.BOLD));
             }
             
-            if (isSelected) {
-                c.setForeground(Color.WHITE);
+            setHorizontalAlignment(column == 0 ? SwingConstants.CENTER : SwingConstants.LEFT);
+            if (column == 2 || column == 3) {
+                setHorizontalAlignment(SwingConstants.RIGHT);
             }
             
-            setHorizontalAlignment(SwingConstants.RIGHT);
             return c;
         }
     }
