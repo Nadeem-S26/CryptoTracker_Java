@@ -4,8 +4,6 @@ A real-time cryptocurrency price monitoring application with user authentication
 
 ![Java](https://img.shields.io/badge/Java-17+-orange.svg)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-
 
 ### User Authentication
 - Secure user registration and login system
