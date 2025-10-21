@@ -57,12 +57,11 @@ class CryptoAPIService {
                 coinId = symbol.toLowerCase();
             }
             
-            String urlStr = API_URL + "?ids=" + coinId + 
-                          "&vs_currencies=usd&include_24hr_change=true";
+            String urlStr = API_URL + "?ids=" + coinId + "&vs_currencies=usd&include_24hr_change=true";
             
             System.out.println("Fetching: " + urlStr); // Debug log
             
-            URL url = new URL(urlStr);
+            URL url = URI.create(urlStr).toURL();
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(15000);

@@ -1,0 +1,28 @@
+# Ignore compiled class files
+*.class
+
+# Ignore bin/ and out/ directories (compiled binaries)
+bin/
+out/
+
+# Ignore build directories (for Maven/Gradle)
+target/
+build/
+
+# Ignore IDE config files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore logs
+*.log
+
+# Ignore temporary files
+*.tmp
+*.swp
