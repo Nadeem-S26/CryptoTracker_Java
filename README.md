@@ -14,9 +14,9 @@ A real-time cryptocurrency price monitoring application with user authentication
 - Real-time cryptocurrency price monitoring
 - Support for major cryptocurrencies (BTC, ETH, SOL, ADA, DOGE, and more)
 - 24-hour price change percentage with color indicators
-- Auto-refresh every 30 seconds
+- Auto-refresh every 1-2 mins
 - Manual refresh option
-- Add custom cryptocurrencies by symbol
+- Add cryptocurrencies by symbol
 
 ### User Interface
 - Modern dark theme with professional aesthetics
