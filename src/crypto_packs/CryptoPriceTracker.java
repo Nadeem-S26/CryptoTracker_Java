@@ -213,7 +213,7 @@ public class CryptoPriceTracker extends JFrame {
         refreshButton = createStyledButton("Refresh All", SUCCESS_COLOR);
         refreshButton.addActionListener(e -> refreshAllData());
         
-        JLabel autoRefreshLabel = new JLabel("Auto-refresh: 30s");
+        JLabel autoRefreshLabel = new JLabel("Auto-refresh: 2 mins");
         autoRefreshLabel.setForeground(SECONDARY_TEXT);
         autoRefreshLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         
@@ -354,14 +354,53 @@ public class CryptoPriceTracker extends JFrame {
     }
     
     private void setupTimer() {
-        refreshTimer = new javax.swing.Timer(30000, e -> refreshAllData());
+        refreshTimer = new javax.swing.Timer(120000, e -> refreshAllData());
         refreshTimer.start();
     }
     
     private void addDefaultCryptos() {
-        String[] defaultSymbols = {"BTC", "ETH", "SOL", "ADA", "DOGE"};
-        for (String symbol : defaultSymbols) {
-            addCryptoSymbol(symbol);
+        SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
+            @Override
+            protected Void doInBackground() {
+                String[] defaultSymbols = {"BTC", "ETH", "SOL"};  // Reduced to 3 to avoid rate limit
+
+                for (int i = 0; i < defaultSymbols.length; i++) {
+                    final String symbol = defaultSymbols[i];
+
+                    SwingUtilities.invokeLater(() -> {
+                        statusLabel.setText("Loading " + symbol + "...");
+                    });
+
+                    addCryptoSymbolSync(symbol);
+
+                    // Add delay between each coin
+                    if (i < defaultSymbols.length - 1) {
+                        try {
+                            Thread.sleep(2000); // 2 second delay
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                statusLabel.setText("Ready");
+            }
+        };
+        worker.execute();
+    }
+
+    // Add this new helper method
+    private void addCryptoSymbolSync(String symbol) {
+        CryptoData crypto = CryptoAPIService.fetchCryptoData(symbol);
+            if (crypto != null) {
+            SwingUtilities.invokeLater(() -> {
+                tableModel.addCrypto(crypto);
+                trackedSymbols.add(symbol);
+            });
         }
     }
     
