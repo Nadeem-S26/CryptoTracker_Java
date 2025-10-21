@@ -91,31 +91,44 @@ public class PortfolioDatabaseManager {
     public static List<PortfolioItem> getUserPortfolio(int userId) {
         List<PortfolioItem> portfolio = new ArrayList<>();
         String query = "SELECT id, symbol, name, quantity, buy_price FROM portfolio WHERE user_id = ?";
-        
+
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-            
+            PreparedStatement pstmt = conn.prepareStatement(query)) {
+
             pstmt.setInt(1, userId);
             ResultSet rs = pstmt.executeQuery();
-            
+
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String symbol = rs.getString("symbol");
                 String name = rs.getString("name");
                 double quantity = rs.getDouble("quantity");
                 double buyPrice = rs.getDouble("buy_price");
-                
-                // Fetch current price from API
-                CryptoData cryptoData = CryptoAPIService.fetchCryptoData(symbol);
-                double currentPrice = cryptoData != null ? cryptoData.getPrice() : buyPrice;
-                
+
+                // Fetch current price from API with error handling
+                double currentPrice = buyPrice; // Default to buy price
+                try {
+                    System.out.println("Fetching price for portfolio item: " + symbol);
+                    CryptoData cryptoData = CryptoAPIService.fetchCryptoData(symbol);
+                        if (cryptoData != null && cryptoData.getPrice() > 0) {
+                            currentPrice = cryptoData.getPrice();
+                            System.out.println("Got price: $" + currentPrice);
+                        } else {
+                            System.err.println("Failed to get price for " + symbol + ", using buy price");
+                        }
+                } catch (Exception e) {
+                    System.err.println("Error fetching price for " + symbol + ": " + e.getMessage());
+                }
+
                 portfolio.add(new PortfolioItem(id, symbol, name, quantity, buyPrice, currentPrice));
             }
-            
+            rs.close();
+
         } catch (SQLException e) {
             System.err.println("Error fetching portfolio: " + e.getMessage());
+            e.printStackTrace();
         }
-        
+
         return portfolio;
     }
     
@@ -207,13 +220,33 @@ class PortfolioTableModel extends AbstractTableModel {
     }
     
     public void updatePrices() {
-        for (PortfolioItem item : portfolio) {
-            CryptoData cryptoData = CryptoAPIService.fetchCryptoData(item.getSymbol());
-            if (cryptoData != null) {
-                item.setCurrentPrice(cryptoData.getPrice());
+        System.out.println("Updating prices for " + portfolio.size() + " items...");
+
+        for (int i = 0; i < portfolio.size(); i++) {
+        PortfolioItem item = portfolio.get(i);
+            try {
+                System.out.println("Fetching price for: " + item.getSymbol());
+                CryptoData cryptoData = CryptoAPIService.fetchCryptoData(item.getSymbol());
+
+                if (cryptoData != null && cryptoData.getPrice() > 0) {
+                    item.setCurrentPrice(cryptoData.getPrice());
+                    System.out.println("Updated " + item.getSymbol() + " to $" + cryptoData.getPrice());
+                } else {
+                    System.err.println("Could not update price for " + item.getSymbol());
+                }
+
+                // Add small delay between each update
+                if (i < portfolio.size() - 1) {
+                    Thread.sleep(2000); // 2 second delay
+                }
+
+            } catch (Exception e) {
+                System.err.println("Error updating " + item.getSymbol() + ": " + e.getMessage());
             }
         }
-        fireTableDataStructured();
+
+        fireTableDataChanged();
+        System.out.println("Price update complete");
     }
     
     private void fireTableDataStructured() {
@@ -529,20 +562,40 @@ class PortfolioFrame extends JFrame {
     }
     
     private void refreshPrices() {
+        refreshButton.setEnabled(false);
+        refreshButton.setText("Refreshing...");
+
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
+                System.out.println("Starting portfolio refresh...");
                 tableModel.updatePrices();
                 return null;
             }
-            
+
             @Override
             protected void done() {
-                int userId = UserSession.getInstance().getUserId();
-                List<PortfolioItem> portfolio = PortfolioDatabaseManager.getUserPortfolio(userId);
-                updateSummary(portfolio);
-                JOptionPane.showMessageDialog(PortfolioFrame.this, 
-                    "Prices refreshed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                try {
+                    // Reload portfolio from database to get fresh data
+                    int userId = UserSession.getInstance().getUserId();
+                    List<PortfolioItem> portfolio = PortfolioDatabaseManager.getUserPortfolio(userId);
+                    tableModel.setPortfolio(portfolio);
+                    updateSummary(portfolio);
+
+                    JOptionPane.showMessageDialog(PortfolioFrame.this, 
+                    "Prices refreshed successfully!", 
+                    "Success", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(PortfolioFrame.this, 
+                    "Error refreshing prices: " + e.getMessage(), 
+                    "Error", 
+                    JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    refreshButton.setEnabled(true);
+                    refreshButton.setText("Refresh Prices");
+                }
             }
         };
         worker.execute();
